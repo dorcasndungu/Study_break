@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Multiplayer Snake</title>
+    <style>
+        canvas { border: 1px solid black; }
+        #score { font-family: Arial; font-size: 20px; }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="600" height="400"></canvas>
+    <div id="score"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.1/socket.io.js"></script>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDiv = document.getElementById('score');
+        const socket = io('http://localhost:3000');
+
+        let myId, players = {}, food = {};
+
+        socket.on('init', (data) => {
+            myId = data.id;
+            players = data.players;
+            food = data.food;
+        });
+
+        socket.on('full', (msg) => {
+            alert(msg);
+        });
+
+        socket.on('update', (data) => {
+            players = data.players;
+            food = data.food;
+            render();
+        });
+
+        socket.on('foodUpdate', (newFood) => {
+            food = newFood;
+        });
+
+        // Controls
+        document.addEventListener('keydown', (e) => {
+            switch (e.key) {
+                case 'ArrowUp': socket.emit('move', 'up'); break;
+                case 'ArrowDown': socket.emit('move', 'down'); break;
+                case 'ArrowLeft': socket.emit('move', 'left'); break;
+                case 'ArrowRight': socket.emit('move', 'right'); break;
+            }
+        });
+
+        function render() {
+            ctx.clearRect(0, 0, 600, 400);
+            // Draw food
+            ctx.fillStyle = '#ff0000';
+            ctx.fillRect(food.x, food.y, 20, 20);
+
+            // Draw snakes
+            for (let id in players) {
+                let player = players[id];
+                ctx.fillStyle = player.color;
+                player.segments.forEach(seg => {
+                    ctx.fillRect(seg.x, seg.y, 20, 20);
+                });
+            }
+
+            // Update score
+            let myScore = players[myId] ? players[myId].score : 0;
+            scoreDiv.innerText = `Your Score: ${myScore}`;
+        }
+    </script>
+</body>
+</html>
